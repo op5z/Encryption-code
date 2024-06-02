@@ -1,1 +1,56 @@
 # Encryption-code
+from Crypto.Cipher import AES
+from Crypto.Protocol.KDF import PBKDF2
+from Crypto.Util.Padding import pad, unpad
+import base64
+
+def encrypt_AES(key, plaintext):
+    cipher = AES.new(key, AES.MODE_CBC)
+    ciphertext_bytes = cipher.encrypt(pad(plaintext.encode(), AES.block_size))
+    iv = base64.b64encode(cipher.iv).decode('utf-8')
+    ciphertext = base64.b64encode(ciphertext_bytes).decode('utf-8')
+    return iv, ciphertext
+
+def decrypt_AES(key, iv, ciphertext):
+    iv_decoded = base64.b64decode(iv)
+    ciphertext_decoded = base64.b64decode(ciphertext)
+    cipher = AES.new(key, AES.MODE_CBC, iv_decoded)
+    plaintext_bytes = unpad(cipher.decrypt(ciphertext_decoded), AES.block_size)
+    plaintext = plaintext_bytes.decode('utf-8')
+    return plaintext
+
+def generate_AES_key(password, salt=b'salt'):
+    key = PBKDF2(password, salt, dkLen=32)
+    return key
+
+while True:
+    plaintext = input("Enter the plaintext: ")
+    password = input("Enter the key: ")
+    key = generate_AES_key(password.encode())
+    iv, ciphertext = encrypt_AES(key, plaintext)
+    print("IV:", iv)
+    print("Ciphertext:", ciphertext)
+    mode = input("Enter 'e' for encryption or 'd' for decryption: ")
+    if mode not in ['e', 'd']:
+        print("Invalid mode. Please enter 'e' or 'd'.")
+        continue
+
+    if mode == 'e':
+        plaintext = input("Enter the plaintext: ")
+        password = input("Enter the key: ")
+        key = generate_AES_key(password.encode())
+        iv, ciphertext = encrypt_AES(key, plaintext)
+        print("IV:", iv)
+        print("Ciphertext:", ciphertext)
+    else:
+        ciphertext = input("Enter the ciphertext: ")
+        iv = input("Enter the IV: ")
+        password = input("Enter the key: ")
+        key = generate_AES_key(password.encode())
+        decrypted_text = decrypt_AES(key, iv, ciphertext)
+        print("Decrypted Text:", decrypted_text)
+        print("IV:", iv)
+
+    again = input("Do you want to encrypt or decrypt again? (yes/no): ")
+    if again.lower() != 'yes':
+        break
